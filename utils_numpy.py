@@ -1,4 +1,8 @@
-from imports import *
+import numpy as np
+from skimage import io
+import matplotlib.pyplot as plt
+import os
+
 
 
 def read_image(path):
@@ -21,7 +25,8 @@ def parse_dataset(path):
     splits = [os.path.join(path, 'Training'), os.path.join(path, 'Test')]
 
     for folder in splits:
-        for fruit in os.listdir(folder):
+        for i, fruit in enumerate(sorted(os.listdir(folder))):
+            print(i, fruit)
             for file in os.listdir(os.path.join(folder, fruit)):
                 img = read_image(os.path.join(folder, fruit, file))
                 if not np.array_equal(img.shape, (100, 100, 3)) or img.max() <= 1 or img.dtype != np.uint8:
