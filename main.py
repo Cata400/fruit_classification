@@ -1,41 +1,54 @@
 from utils_tf import *
 
 
-if __name__ == '__main__':  
-    tf = True
-    train = True
+if __name__ == '__main__': 
     dataset_path = os.path.join('..', 'fruits-360')
-    extract_data = False
     fruit_list = sorted(os.listdir(os.path.join(dataset_path, 'Training')))
-    no_classes = len(fruit_list)
+    no_classes = len(fruit_list) 
+    
+    tensorflow = True
+    train = True
+    extract_data = False
+    pca = False
+    no_components = 66 ** 2
+    
     seed = 42
-    batch_size = 1024
+    batch_size = 512
     shuffle_buffer_size = 16 * batch_size
-    save_model_name = 'tf_1.h5'
+    save_model_name = 'tf_nopca_4.h5'
     callbacks = [
-                TensorBoard(log_dir='Logs'),
-                ModelCheckpoint(os.path.join('Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
+                TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
+                ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
     ]
     epochs = 1000
 
-    if tf:
+    if tensorflow:
         if train:
         ### Get data
             if extract_data:
-                get_data_tf(dataset_path, seed, no_classes)   
+                if pca:
+                    get_data_tf_pca(dataset_path, no_classes, no_components)
+                else:
+                    get_data_tf(dataset_path, no_classes)   
                 
-            train_dataset = load_data_tf(os.path.join('Data', 'train.tfrecord'))
-            val_dataset = load_data_tf(os.path.join('Data', 'val.tfrecord'))
+            train_dataset = load_data_tf(os.path.join('..', 'Data', 'train.tfrecord'))
+            val_dataset = load_data_tf(os.path.join('..', 'Data', 'val.tfrecord'))
             
+            train_dataset = train_dataset.cache()
+            val_dataset = val_dataset.cache()
+        
+            ### Batch and shuffle the datasets
+            tf.random.set_seed(seed)
             train_dataset = train_dataset.shuffle(shuffle_buffer_size).batch(batch_size)
             val_dataset = val_dataset.shuffle(shuffle_buffer_size).batch(batch_size)
             
-            model = get_model_tf((100 * 100 * 3), no_classes)
+            train_dataset = train_dataset.map(fixup_shape)
+            val_dataset = val_dataset.map(fixup_shape)
+
+
+            
+            ### Initialize the model and train
+            model = get_model_tf((100 * 100 * 3,), no_classes)
             model.fit(train_dataset, epochs=epochs, validation_data=val_dataset, callbacks=callbacks, verbose=1)
             
-                
-        
-        
-        
-
     print("Gata proiectul, 10!!")

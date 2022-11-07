@@ -1,11 +1,14 @@
+import datetime
 import numpy as np
 from skimage import io
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import os
-import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+import tensorflow as tf
+
 
 
 def read_image(path):
@@ -61,9 +64,11 @@ def serialize_example(img, label):
           
                     
 def get_data_tf(path, seed, no_classes):
-    train_writer = tf.io.TFRecordWriter(os.path.join('Data', 'train.tfrecord'))
-    test_writer = tf.io.TFRecordWriter(os.path.join('Data', 'test.tfrecord'))
-    val_writer = tf.io.TFRecordWriter(os.path.join('Data', 'val.tfrecord'))
+    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train.tfrecord'))
+    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test.tfrecord'))
+    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val.tfrecord'))
+    
+    np.random.seed(seed)
     
     for folder in sorted(os.listdir(path)):
         print(folder)
@@ -77,8 +82,7 @@ def get_data_tf(path, seed, no_classes):
                 
                 for j, file in enumerate(sorted(os.listdir(os.path.join(path, folder, fruit)))):
                     img = read_image(os.path.join(path, folder, fruit, file))
-                    x = img.flatten() / 255
-                    x = x.reshape(1, -1)
+                    x = img.flatten() / 255                    
                     y = tf.one_hot(i, no_classes)
                     
                     if folder == 'Training':
@@ -88,6 +92,66 @@ def get_data_tf(path, seed, no_classes):
                     else:
                         test_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
 
+
+
+def get_data_tf_pca(path, seed, no_classes, no_components):
+    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
+    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
+    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
+    
+    np.random.seed(seed)
+    
+    x_train, y_train = [], []
+    for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
+        print(i, fruit) 
+        for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Training', fruit)))):
+            img = read_image(os.path.join(path, 'Training', fruit, file))
+            x = img.flatten() / 255                    
+            y = tf.one_hot(i, no_classes)
+            x_train.append(x)
+            y_train.append(y)
+            
+    pca = PCA(n_components=no_components)
+    pca.fit(x_train)
+    
+    x_train_pca = pca.transform(x_train)
+    print('x_train pca: ', x_train_pca.shape)
+    for x, y in zip(x_train_pca, y_train):
+        train_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
+    del x_train, y_train, x_train_pca
+    print('Train PCA done')
+    
+    x_test, x_val, y_test, y_val = [], [], [], []
+    for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Testing')))):
+        print(i, fruit) 
+        val_idx = np.random.randint(0, len(os.listdir(os.path.join(path, 'Testing', fruit))), 
+                                                size=len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2)
+        for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Testing', fruit)))):
+            img = read_image(os.path.join(path, 'Testing', fruit, file))
+            x = img.flatten() / 255                    
+            y = tf.one_hot(i, no_classes)
+            
+            if j in val_idx:
+                x_val.append(x)
+                y_val.append(y)
+            else:
+                x_test.append(x)
+                y_test.append(y)
+    
+    x_val_pca = pca.transform(x_val)
+    print('x_val pca: ', x_val_pca.shape)
+    for x, y in zip(x_val_pca, y_val):
+        val_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
+    del x_val, y_val, x_val_pca
+    print('Val PCA done')
+    
+    x_test_pca = pca.transform(x_test)
+    print('x_test pca: ', x_test_pca.shape)
+    for x, y in zip(x_test_pca, y_test):
+        test_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
+    del x_test, y_test, x_test_pca
+    print('Test PCA done')
+                
 
 def _parse_function(example_proto):
     feature_description = {
@@ -99,7 +163,6 @@ def _parse_function(example_proto):
     decoded_img = tf.io.parse_tensor(element['img'], 'float32')
     decoded_label = tf.io.parse_tensor(element['label'], 'float32')
 
-    
     # Parse the input `tf.train.Example` proto using the dictionary above.
     return decoded_img, decoded_label
 
@@ -113,18 +176,26 @@ def load_data_tf(path):
 
 def get_model_tf(input_shape, no_classes):
     model_input = Input(shape=input_shape)
-    h1 = Dense(1024, activation='relu')(model_input)
-    h2 = Dense(512, activation='relu')(h1)
-    h3 = Dense(512, activation='relu')(h2)
-    h4 = Dense(256, activation='relu')(h3)
-    h5 = Dense(256, activation='relu')(h4)
+    h1 = Dense(4096, activation='relu')(model_input)
+    h2 = Dense(2048, activation='relu')(h1)
+    h3 = Dense(1024, activation='relu')(h2)
+    h4 = Dense(1024, activation='relu')(h3)
+    h5 = Dense(512, activation='relu')(h4)
     h6 = Dense(256, activation='relu')(h5)
     output = Dense(no_classes, activation='softmax')(h6)
     
     model = Model(inputs=model_input, outputs=output)
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     
+    model.summary()
+    
     return model
+
+
+def fixup_shape(images, labels):
+    images.set_shape([None, 100 * 100 * 3])
+    labels.set_shape([None, 131]) # I have 19 classes
+    return images, labels
 
 
 
