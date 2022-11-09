@@ -176,10 +176,10 @@ def load_data_tf(path):
 
 def get_model_tf(input_shape, no_classes):
     model_input = Input(shape=input_shape)
-    h1 = Dense(4096, activation='relu')(model_input)
-    h2 = Dense(2048, activation='relu')(h1)
+    h1 = Dense(2048, activation='relu')(model_input)
+    h2 = Dense(1024, activation='relu')(h1)
     h3 = Dense(1024, activation='relu')(h2)
-    h4 = Dense(1024, activation='relu')(h3)
+    h4 = Dense(512, activation='relu')(h3)
     h5 = Dense(512, activation='relu')(h4)
     h6 = Dense(256, activation='relu')(h5)
     output = Dense(no_classes, activation='softmax')(h6)
@@ -194,7 +194,7 @@ def get_model_tf(input_shape, no_classes):
 
 def fixup_shape(images, labels):
     images.set_shape([None, 100 * 100 * 3])
-    labels.set_shape([None, 131]) # I have 19 classes
+    labels.set_shape([None, 131])
     return images, labels
 
 

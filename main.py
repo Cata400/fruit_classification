@@ -8,28 +8,29 @@ if __name__ == '__main__':
     
     tensorflow = True
     train = True
-    extract_data = False
-    pca = False
+    extract_data = True
+    pca = True
     no_components = 66 ** 2
     
     seed = 42
     batch_size = 512
     shuffle_buffer_size = 16 * batch_size
-    save_model_name = 'tf_nopca_4.h5'
+    save_model_name = 'tf_pca66_3.h5'
     callbacks = [
                 TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
                 ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
     ]
-    epochs = 1000
+    epochs = 150
 
     if tensorflow:
         if train:
         ### Get data
             if extract_data:
                 if pca:
-                    get_data_tf_pca(dataset_path, no_classes, no_components)
+                    get_data_tf_pca(dataset_path, seed, no_classes, no_components)
                 else:
-                    get_data_tf(dataset_path, no_classes)   
+                    get_data_tf(dataset_path, seed, no_classes)
+                exit()  
                 
             train_dataset = load_data_tf(os.path.join('..', 'Data', 'train.tfrecord'))
             val_dataset = load_data_tf(os.path.join('..', 'Data', 'val.tfrecord'))
