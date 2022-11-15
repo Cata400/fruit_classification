@@ -1,14 +1,13 @@
-import datetime
-import numpy as np
-from skimage import io
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
 import os
-from tensorflow.keras.layers import Input, Dense
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
-import tensorflow as tf
 
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from skimage import io
+from sklearn.decomposition import PCA, IncrementalPCA
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model
 
 
 def read_image(path):
@@ -38,8 +37,8 @@ def parse_dataset(path):
                 img = read_image(os.path.join(folder, fruit, file))
                 if not np.array_equal(img.shape, (100, 100, 3)) or img.max() <= 1 or img.dtype != np.uint8:
                     print(folder, fruit, file)
-             
-          
+
+
 def _bytes_feature(value):
     if isinstance(value, type(tf.constant(0))):
         value = value.numpy()
@@ -48,20 +47,20 @@ def _bytes_feature(value):
 
 
 def serialize_example(img, label):
-  """
-  Creates a tf.train.Example message ready to be written to a file.
-  """
-  # Create a dictionary mapping the feature name to the tf.train.Example-compatible
-  # data type.
-  feature = {
-      'img': _bytes_feature(img),
-      'label': _bytes_feature(label),
-  }
+    """
+    Creates a tf.train.Example message ready to be written to a file.
+    """
+    # Create a dictionary mapping the feature name to the tf.train.Example-compatible
+    # data type.
+    feature = {
+        'img': _bytes_feature(img),
+        'label': _bytes_feature(label),
+    }
 
-  # Create a Features message using tf.train.Example.
-  example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
-  return example_proto.SerializeToString()
-          
+    # Create a Features message using tf.train.Example.
+    example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
+    return example_proto.SerializeToString()
+            
                     
 def get_data_tf(path, seed, no_classes):
     train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train.tfrecord'))
@@ -77,8 +76,8 @@ def get_data_tf(path, seed, no_classes):
                 print(i, fruit)
                 
                 if folder == 'Test':
-                    val_idx = np.random.randint(0, len(os.listdir(os.path.join(path, folder, fruit))), 
-                                                size=len(os.listdir(os.path.join(path, folder, fruit))) // 2)
+                    val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Testing', fruit))), 
+                                  len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2, replace=False)
                 
                 for j, file in enumerate(sorted(os.listdir(os.path.join(path, folder, fruit)))):
                     img = read_image(os.path.join(path, folder, fruit, file))
@@ -95,61 +94,58 @@ def get_data_tf(path, seed, no_classes):
 
 
 def get_data_tf_pca(path, seed, no_classes, no_components):
-    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
-    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
-    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val_' + str(int(np.sqrt(no_components))) + '.tfrecord'))
+    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
+    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
+    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
     
     np.random.seed(seed)
-    
-    x_train, y_train = [], []
+    pca = IncrementalPCA(n_components=no_components)
+
+    x_count = 0
+    x_train_small = []
     for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
         print(i, fruit) 
         for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Training', fruit)))):
             img = read_image(os.path.join(path, 'Training', fruit, file))
             x = img.flatten() / 255                    
-            y = tf.one_hot(i, no_classes)
-            x_train.append(x)
-            y_train.append(y)
-            
-    pca = PCA(n_components=no_components)
-    pca.fit(x_train)
+            x_train_small.append(x)
+            if x_count != 0 and x_count % no_components == 0:
+                pca.partial_fit(x_train_small)
+                x_train_small = []
+            x_count += 1
+        
+        
+    del x_train_small
     
-    x_train_pca = pca.transform(x_train)
-    print('x_train pca: ', x_train_pca.shape)
-    for x, y in zip(x_train_pca, y_train):
-        train_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
-    del x_train, y_train, x_train_pca
+    for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
+        print(i, fruit) 
+        for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Training', fruit)))):
+            img = read_image(os.path.join(path, 'Training', fruit, file))
+            x = img.flatten() / 255     
+            x = x.reshape(1, -1)
+            x = np.squeeze(pca.transform(x))
+            y = tf.one_hot(i, no_classes)
+            
+            train_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), y))
+            
     print('Train PCA done')
     
-    x_test, x_val, y_test, y_val = [], [], [], []
     for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Testing')))):
         print(i, fruit) 
-        val_idx = np.random.randint(0, len(os.listdir(os.path.join(path, 'Testing', fruit))), 
-                                                size=len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2)
+        val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Testing', fruit))), 
+                                  len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2, replace=False)
         for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Testing', fruit)))):
             img = read_image(os.path.join(path, 'Testing', fruit, file))
-            x = img.flatten() / 255                    
+            x = img.flatten() / 255
+            x = x.reshape(1, -1)
+            x = np.squeeze(pca.transform(x))                    
             y = tf.one_hot(i, no_classes)
             
             if j in val_idx:
-                x_val.append(x)
-                y_val.append(y)
+                val_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), y))
             else:
-                x_test.append(x)
-                y_test.append(y)
+                test_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), y))
     
-    x_val_pca = pca.transform(x_val)
-    print('x_val pca: ', x_val_pca.shape)
-    for x, y in zip(x_val_pca, y_val):
-        val_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
-    del x_val, y_val, x_val_pca
-    print('Val PCA done')
-    
-    x_test_pca = pca.transform(x_test)
-    print('x_test pca: ', x_test_pca.shape)
-    for x, y in zip(x_test_pca, y_test):
-        test_writer.write(serialize_example(np.asanyarray(x, dtype=np.float32), np.asanyarray(y, dtype=np.float32)))
-    del x_test, y_test, x_test_pca
     print('Test PCA done')
                 
 

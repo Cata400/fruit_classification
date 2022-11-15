@@ -1,5 +1,6 @@
-from utils_tf import *
+import datetime
 
+from utils_tf import *
 
 if __name__ == '__main__': 
     dataset_path = os.path.join('..', 'fruits-360')
@@ -10,7 +11,7 @@ if __name__ == '__main__':
     train = True
     extract_data = True
     pca = True
-    no_components = 66 ** 2
+    no_components = 66 ** 2 * 3
     
     seed = 42
     batch_size = 512
