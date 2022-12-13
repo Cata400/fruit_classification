@@ -8,7 +8,7 @@ if __name__ == '__main__':
     no_classes = len(fruit_list) 
     
     tensorflow = True
-    train = True
+    train = False
     extract_data = True
     pca = True
     no_components = 66 ** 2 * 3

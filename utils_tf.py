@@ -101,6 +101,7 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
     np.random.seed(seed)
     pca = IncrementalPCA(n_components=no_components)
 
+    print('Fitting PCA')
     x_count = 0
     x_train_small = []
     for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
@@ -117,6 +118,7 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
         
     del x_train_small
     
+    print('Train PCA')
     for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
         print(i, fruit) 
         for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Training', fruit)))):
