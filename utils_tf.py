@@ -70,14 +70,14 @@ def get_data_tf(path, seed, no_classes):
     np.random.seed(seed)
     
     for folder in sorted(os.listdir(path)):
-        print(folder)
         if folder == 'Training' or folder == 'Test':
+            print(folder)
             for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, folder)))):
                 print(i, fruit)
                 
                 if folder == 'Test':
-                    val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Testing', fruit))), 
-                                  len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2, replace=False)
+                    val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Test', fruit))), 
+                                  len(os.listdir(os.path.join(path, 'Test', fruit))) // 2, replace=False)
                 
                 for j, file in enumerate(sorted(os.listdir(os.path.join(path, folder, fruit)))):
                     img = read_image(os.path.join(path, folder, fruit, file))
@@ -94,15 +94,16 @@ def get_data_tf(path, seed, no_classes):
 
 
 def get_data_tf_pca(path, seed, no_classes, no_components):
-    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
-    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
-    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val_' + str(int(np.sqrt(no_components / 3))) + '.tfrecord'))
+    train_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'train_pca' + str(int(np.sqrt(no_components // 3))) + '.tfrecord'))
+    test_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'test_pca' + str(int(np.sqrt(no_components // 3))) + '.tfrecord'))
+    val_writer = tf.io.TFRecordWriter(os.path.join('..', 'Data', 'val_pca' + str(int(np.sqrt(no_components // 3))) + '.tfrecord'))
     
     np.random.seed(seed)
     pca = IncrementalPCA(n_components=no_components)
 
     print('Fitting PCA')
     x_count = 0
+    train_files = 67692
     x_train_small = []
     for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Training')))):
         print(i, fruit) 
@@ -114,6 +115,8 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
                 pca.partial_fit(x_train_small)
                 x_train_small = []
             x_count += 1
+        if train_files - x_count < no_components:
+            break    
         
         
     del x_train_small
@@ -132,12 +135,12 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
             
     print('Train PCA done')
     
-    for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Testing')))):
+    for i, fruit in enumerate(sorted(os.listdir(os.path.join(path, 'Test')))):
         print(i, fruit) 
-        val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Testing', fruit))), 
-                                  len(os.listdir(os.path.join(path, 'Testing', fruit))) // 2, replace=False)
-        for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Testing', fruit)))):
-            img = read_image(os.path.join(path, 'Testing', fruit, file))
+        val_idx = np.random.choice(len(os.listdir(os.path.join(path, 'Test', fruit))), 
+                                  len(os.listdir(os.path.join(path, 'Test', fruit))) // 2, replace=False)
+        for j, file in enumerate(sorted(os.listdir(os.path.join(path, 'Test', fruit)))):
+            img = read_image(os.path.join(path, 'Test', fruit, file))
             x = img.flatten() / 255
             x = x.reshape(1, -1)
             x = np.squeeze(pca.transform(x))                    

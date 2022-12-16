@@ -8,15 +8,15 @@ if __name__ == '__main__':
     no_classes = len(fruit_list) 
     
     tensorflow = True
-    train = False
-    extract_data = True
-    pca = True
-    no_components = 66 ** 2 * 3
+    train = True
+    extract_data = False
+    pca = False
+    no_components = 50 ** 2 * 3
     
     seed = 42
     batch_size = 512
     shuffle_buffer_size = 16 * batch_size
-    save_model_name = 'tf_pca66_3.h5'
+    save_model_name = 'tf_pca50_3_v2.h5'
     callbacks = [
                 TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
                 ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
