@@ -15,17 +15,17 @@ from tensorflow.keras.models import Model
 
 def read_image(path):
     """
-    Read image from path.
+    Read image in format HWC for RGB or HW for Grayscale from path.
 
     Parameters
     ----------
     path : string
-        Path-like object.
+        Path to image.-
 
     Returns
     -------
-    numpy.ndarray
-        Image to be processed.
+    2D or 3D numpy.ndarray
+        Image in format HWC for RGB or HW for Grayscale.
     """
     image = io.imread(path)
     return image
@@ -38,7 +38,7 @@ def show_image(img, title, min=0, max=255, gray=False):
     Parameters
     ----------
     img : 2D or 3D array-like
-        Image to be plotted.
+        Image to be plotted, in HW or HWC format.
     title : string
         Title of the plot.
     min : int, optional
@@ -66,7 +66,7 @@ def parse_dataset(path):
     Parameters
     ----------
     path : string
-        Path-like object.
+        Path to dataset.
     """
     splits = [os.path.join(path, 'Training'), os.path.join(path, 'Test')]
 
@@ -135,7 +135,7 @@ def get_data_tf(path, seed, no_classes):
     Parameters
     ----------
     path : string
-        Path-like object.
+        Path to dataset.
     seed : int
         Seed for the random generator.
     no_classes : int
@@ -178,7 +178,7 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
     Parameters
     ----------
     path : string
-        Path-like object.
+        Path to dataset.
     seed : int
         Seed for the random generator.
     no_classes : int
@@ -281,7 +281,7 @@ def load_data_tf(path):
     Parameters
     ----------
     path : string
-        Path-like object.
+        Path to tfrecord file.
 
     Returns
     -------

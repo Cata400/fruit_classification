@@ -1,29 +1,34 @@
 import datetime
 
 from utils_tf import *
+from utils_torch import *
 
 if __name__ == '__main__': 
     dataset_path = os.path.join('..', 'fruits-360')
     fruit_list = sorted(os.listdir(os.path.join(dataset_path, 'Training')))
     no_classes = len(fruit_list) 
     
-    tensorflow = True
-    train = False
+    tensorflow = False
+    pytorch = True
+    
+    assert tensorflow != pytorch, 'Choose only one framework: tensorflow or torch!'
+    
+    train = True
     extract_data = True
-    pca = False
-    no_components = 50 ** 2 * 3
+    pca = True
+    no_components = 10 ** 2 * 3
     
     seed = 42
     batch_size = 512
     shuffle_buffer_size = 16 * batch_size
-    save_model_name = 'tf_pca50_2.h5'
+    save_model_name = 'tf_pca10_2.h5'
     callbacks = [
                 TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
                 ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
     ]
     epochs = 150
     
-    load_model_name = 'tf_nopca_1.h5'
+    load_model_name = 'tf_nopca_2.h5'
 
     if tensorflow:
         if pca:
@@ -92,5 +97,16 @@ if __name__ == '__main__':
             ### Get ROC AUC
             get_roc_auc(y_true, y_pred, no_classes)
 
+    elif pytorch:
+        if train:
+            print(f"Torch CUDA is available: {torch.cuda.is_available()}")
+            
+            ### Get data
+            train_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Training'), target_transform=OneHotEncoding(fruit_list))
+            test_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), target_transform=OneHotEncoding(fruit_list)) #TODO: allow validation data
+            
+            train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+            test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+            
             
     print("Gata proiectul, 10!!")
