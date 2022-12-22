@@ -24,16 +24,13 @@ def read_image_torch(path):
 class OneHotEncoding(object): #TODO: better docstrings
     """
     One-hot encode labels.
+    
+    Attributes
+    ----------
+    labels : list or tuple
+        List of labels.
     """
     def __init__(self, labels):
-        """
-        Init function for OneHotEncoding.
-
-        Parameters
-        ----------
-        labels : list
-            List of labels.
-        """
         self.labels = sorted(labels)
     
     def __call__(self, current_label):
@@ -42,29 +39,34 @@ class OneHotEncoding(object): #TODO: better docstrings
         return one_hot_label
 
 
-class FruitDataset(torch.utils.data.Dataset): #TODO: better docstrings
+class FruitDataset(torch.utils.data.Dataset): 
     """
     Dataset for fruit images. Inherits from torch.utils.data.Dataset.
     Images are read using read_image_torch function.
 
     Attributes
     ----------
+    img_dir : string
+        Path to directory with images.
+    img_labels : list or tuple
+        List of labels.
+    test : bool, optional
+        If True, dataset is used for testing, default is False.
+    validation : bool, optional
+        If True, dataset is used for validation, default is False.
+    seed : int, optional
+        Seed for random number generator, used for split between test and validation data, default is 42.
+    transform : callable, optional
+        Optional transform to be applied on a sample image.
+    target_transform : callable, optional
+        Optional transform to be applied on a sample label.
     """
-    def __init__(self, dir, transform=None, target_transform=None):
-        """
-        _summary_
-
-        Parameters
-        ----------
-        dir : string
-            Path to directory with images.
-        transform : _type_, optional
-            _description_, by default None
-        target_transform : _type_, optional
-            _description_, by default None
-        """
+    def __init__(self, dir, test=False, validation=False, seed=42, transform=None, target_transform=None):
         self.img_dir = dir
         self.img_labels = os.listdir(dir)
+        self.test = test
+        self.seed = seed
+        self.validation = validation
         self.transform = transform
         self.target_transform = target_transform
         

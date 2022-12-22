@@ -102,11 +102,13 @@ if __name__ == '__main__':
             print(f"Torch CUDA is available: {torch.cuda.is_available()}")
             
             ### Get data
-            train_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Training'), target_transform=OneHotEncoding(fruit_list))
-            test_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), target_transform=OneHotEncoding(fruit_list)) #TODO: allow validation data
+            train_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Training'), test=False, validation=False, target_transform=OneHotEncoding(fruit_list))
+            val_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=True, target_transform=OneHotEncoding(fruit_list))
+            test_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=False, target_transform=OneHotEncoding(fruit_list)) #TODO: allow validation data
             
-            train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-            test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+            train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+            val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+            test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
             
             
     print("Gata proiectul, 10!!")
