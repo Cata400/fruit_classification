@@ -160,7 +160,7 @@ class MLP6(torch.nn.Module):
         return y
 
 
-def train_loop(train_dataloader, val_dataloader, model, loss_fn, optimizer, device):
+def train_loop(train_dataloader, model, loss_fn, optimizer, device):
     """
     Training loop.
 
@@ -168,8 +168,6 @@ def train_loop(train_dataloader, val_dataloader, model, loss_fn, optimizer, devi
     ----------
     train_dataloader : torch.utils.data.DataLoader
         Training dataloader.
-    val_dataloader : torch.utils.data.DataLoader
-        Validation dataloader.
     model : torch.nn.Module
         Model to be trained on.
     loss_fn : torch.nn
@@ -197,17 +195,15 @@ def train_loop(train_dataloader, val_dataloader, model, loss_fn, optimizer, devi
         optimizer.step()
 
         if batch % 10 == 0:
-            loss, current = loss.item(), batch * len(x)
-            print(f" Batch {batch + 1} / {num_batches} Train loss: {loss:>7f}")
+            loss = loss.item()
+            print(f" Batch {batch} / {num_batches - 1} Train loss: {loss:>7f}")
             
     total_loss /= num_batches
     correct /= train_size
     print(f"Train Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {total_loss:>8f} \n")
             
-    test_loop(val_dataloader, model, loss_fn)
 
-
-def test_loop(dataloader, model, loss_fn, device):
+def test_loop(dataloader, model, loss_fn, device, validation):
     """
     Testing loop.
 
@@ -235,4 +231,8 @@ def test_loop(dataloader, model, loss_fn, device):
 
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    
+    if validation:
+        print(f"Validation Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    else:
+        print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")

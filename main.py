@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from utils_tf import *
 from utils_torch import *
@@ -14,8 +15,8 @@ if __name__ == '__main__':
     assert tensorflow != pytorch, 'Choose only one framework: tensorflow or torch!'
     
     train = True
-    extract_data = True
-    pca = True
+    extract_data = False
+    pca = False
     no_components = 10 ** 2 * 3
     
     seed = 42
@@ -102,6 +103,8 @@ if __name__ == '__main__':
 
     elif pytorch:
         if train:
+            torch.backends.cudnn.benchmark = True
+            
             ### Get data
             train_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Training'), test=False, validation=False, target_transform=OneHotEncoding(fruit_list))
             val_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=True, target_transform=OneHotEncoding(fruit_list))
@@ -111,8 +114,9 @@ if __name__ == '__main__':
             val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
             
             ### Initialize the model and train
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             print(f"Using {device} device")
+            
             
             model = MLP6(input_size=3*100*100, no_classes=no_classes).to(device)
             print("Model summary:\n", model)
@@ -120,10 +124,15 @@ if __name__ == '__main__':
             loss_fn = torch.nn.CrossEntropyLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
             
-            #TODO: make training faster, test saving and loading model, test prediction, save best model only
+            #TODO: make training faster, test saving and loading model, test prediction, save best model only, tensorboard
             for t in range(epochs):
-                print(f"Epoch {t+1}\n-------------------------------")
-                train_loop(train_dataloader, val_dataloader, model, loss_fn, optimizer, device)
+                print(f"Epoch {t + 1}\n-------------------------------")
+                start_epoch = time.time()
+                train_loop(train_dataloader, model, loss_fn, optimizer, device)
+                test_loop(val_dataloader, model, loss_fn, optimizer, device, validation=True)
+                stop_epoch = time.time()
+                print(f"Epoch {t + 1} time: {stop_epoch - start_epoch:.2f} seconds")
+
                 
             torch.save(model, os.path.join('..', 'Models', save_model_name))
             
@@ -143,7 +152,7 @@ if __name__ == '__main__':
             loss_fn = torch.nn.CrossEntropyLoss()
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
             
-            test_loop(test_dataloader, model, loss_fn, optimizer, device)
+            test_loop(test_dataloader, model, loss_fn, optimizer, device, validation=False)
             
             
             
