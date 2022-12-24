@@ -19,16 +19,19 @@ if __name__ == '__main__':
     no_components = 10 ** 2 * 3
     
     seed = 42
-    batch_size = 512
-    shuffle_buffer_size = 16 * batch_size
-    save_model_name = 'tf_pca10_2.h5'
+    save_model_name = 'torch_nopca_2.pth'
     callbacks = [
                 TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
                 ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
     ]
+    
+    ### Hyperparameters
+    batch_size = 512
+    shuffle_buffer_size = 16 * batch_size
+    learning_rate = 1e-3
     epochs = 150
     
-    load_model_name = 'tf_nopca_2.h5'
+    load_model_name = 'torch_nopca_2.pth'
 
     if tensorflow:
         if pca:
@@ -99,16 +102,50 @@ if __name__ == '__main__':
 
     elif pytorch:
         if train:
-            print(f"Torch CUDA is available: {torch.cuda.is_available()}")
-            
             ### Get data
             train_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Training'), test=False, validation=False, target_transform=OneHotEncoding(fruit_list))
             val_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=True, target_transform=OneHotEncoding(fruit_list))
-            test_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=False, target_transform=OneHotEncoding(fruit_list)) #TODO: allow validation data
             
+            ### Batch and shuffle the datasets
             train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
             val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+            
+            ### Initialize the model and train
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"Using {device} device")
+            
+            model = MLP6(input_size=3*100*100, no_classes=no_classes).to(device)
+            print("Model summary:\n", model)
+            
+            loss_fn = torch.nn.CrossEntropyLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+            
+            #TODO: make training faster, test saving and loading model, test prediction, save best model only
+            for t in range(epochs):
+                print(f"Epoch {t+1}\n-------------------------------")
+                train_loop(train_dataloader, val_dataloader, model, loss_fn, optimizer, device)
+                
+            torch.save(model, os.path.join('..', 'Models', save_model_name))
+            
+        else:
+            ### Get data
+            test_dataset = FruitDataset(dir=os.path.join(dataset_path, 'Test'), test=True, validation=False, target_transform=OneHotEncoding(fruit_list))
             test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count())
+
+            ### Initialize the model and predict
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"Using {device} device")
+            
+            model = torch.load(os.path.join('..', 'Models', load_model_name))
+            model.to(device)
+            model.eval()
+            
+            loss_fn = torch.nn.CrossEntropyLoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+            
+            test_loop(test_dataloader, model, loss_fn, optimizer, device)
             
             
+            
+
     print("Gata proiectul, 10!!")
