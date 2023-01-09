@@ -1,6 +1,7 @@
 import datetime
 import time
 
+from utils_jax import *
 from utils_tf import *
 from utils_torch import *
 
@@ -9,18 +10,16 @@ if __name__ == '__main__':
     fruit_list = sorted(os.listdir(os.path.join(dataset_path, 'Training')))
     no_classes = len(fruit_list) 
     
-    tensorflow = False
-    pytorch = True
-    
-    assert tensorflow != pytorch, 'Choose only one framework: tensorflow or torch!'
-    
-    train = True
+    Tensorflow = True
+    Pytorch = False
+        
+    train = False
     extract_data = False
-    pca = False
+    pca = True
     no_components = 10 ** 2 * 3
     
     seed = 42
-    save_model_name = 'torch_nopca_2.pth'
+    save_model_name = 'tf_pca50_4.h5'
     callbacks = [
                 TensorBoard(log_dir='../Logs/log_' + save_model_name.split('.')[0] + '_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")),
                 ModelCheckpoint(os.path.join('..', 'Models', save_model_name), monitor='val_loss', verbose=1, save_best_only=True),
@@ -32,9 +31,9 @@ if __name__ == '__main__':
     learning_rate = 1e-3
     epochs = 150
     
-    load_model_name = 'torch_nopca_2.pth'
+    load_model_name = 'tf_pca10.h5'
 
-    if tensorflow:
+    if Tensorflow:
         if pca:
             train_tfrecord = 'train_pca' + str(int(np.sqrt(no_components // 3))) + '.tfrecord'
             val_tfrecord = 'val_pca' + str(int(np.sqrt(no_components // 3))) + '.tfrecord'
@@ -68,7 +67,7 @@ if __name__ == '__main__':
             val_dataset = val_dataset.map(fixup_shape)
 
             ### Initialize the model and train
-            model = get_model_tf((100 * 100 * 3,), no_classes)
+            model = get_model_tf((50 * 50 * 3,), no_classes)
             model.fit(train_dataset, epochs=epochs, validation_data=val_dataset, callbacks=callbacks, verbose=1)
             
         else:
@@ -94,6 +93,7 @@ if __name__ == '__main__':
             loss, acc = model.evaluate(test_dataset, verbose=0)
             
             print("Test accuracy: {:5.2f}%".format(100 * acc))
+            print("Test loss: {:5.2f}".format(loss))
             
             ### Get confusion matrix
             get_confusion_matrix(y_true_labels, y_pred_labels, fruit_list, print_acc=True)
@@ -101,7 +101,7 @@ if __name__ == '__main__':
             ### Get ROC AUC
             get_roc_auc(y_true, y_pred, no_classes)
 
-    elif pytorch:
+    elif Pytorch:
         if train:
             torch.backends.cudnn.benchmark = True
             
@@ -153,8 +153,9 @@ if __name__ == '__main__':
             optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
             
             test_loop(test_dataloader, model, loss_fn, optimizer, device, validation=False)
-            
+    else:
+        raise ValueError("Please select a framework!")
             
             
 
-    print("Gata proiectul, 10!!")
+    print("Project done, A+!!!")

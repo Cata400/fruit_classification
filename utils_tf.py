@@ -209,8 +209,7 @@ def get_data_tf_pca(path, seed, no_classes, no_components):
             x_count += 1
         if train_files - x_count < no_components:
             break    
-        
-        
+    
     del x_train_small
     
     print('Train PCA')
@@ -345,7 +344,7 @@ def fixup_shape(images, labels):
     labels: tensorflow.Tensor
         Label with a fixed shape.
     """
-    images.set_shape([None, 100 * 100 * 3])
+    images.set_shape([None, 10 * 10 * 3])
     labels.set_shape([None, 131])
     return images, labels
 
