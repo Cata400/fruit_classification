@@ -171,7 +171,7 @@ CONCLUSIONS![](images/Aspose.Words.49a566af-1571-4334-a467-fe997580f0fb.001.png)
 
 This project represents a Fruit Classier, capable of labeling dierent kinds of fruits and vegetables using a simple MLP model with 6 hidden layers. This type of system has a great applicability in the food industry, potentially saving time and eort in tasks such as sorting or inventory management.
 
-In Chapter [1 ](#_page12_x57.83_y57.83)was presented a theoretical overview on Neural Networks, Multilayer Percep- tron and Principal Component Analysis.
+In Chapter [1 ](#_page12_x57.83_y57.83) (not included for readme length reasons) was presented a theoretical overview on Neural Networks, Multilayer Percep- tron and Principal Component Analysis.
 
 Chapter [2 ](#_page22_x57.83_y57.83)depicts the implementation process, from the dataset, a few preprocessing steps and the architecture and hyperparameters of the model.
 
