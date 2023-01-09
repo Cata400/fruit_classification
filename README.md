@@ -182,8 +182,6 @@ Chapter [3 ](#_page26_x57.83_y57.83)presents the results obtained and the perfor
 - Applying different types of PCA transforms to the data, with the goal of studying the eects of using fewer and fewer components to train the network;
 - Implementing and training of the MLP models.
 
-The source code of the project implementation is available on Github[^2].
-
 3. Future developments
 
 In general, the most important thing when implementing a Neural Network model is the available data for training. The rst future development would be the extension of the dataset by dierent techniques of data augmentation, in order to greatly multiply our data.
@@ -199,4 +197,3 @@ BIBLIOGRAPHY![](images/Aspose.Words.49a566af-1571-4334-a467-fe997580f0fb.001.png
 26
 
 [^1]: <https://www.kaggle.com/datasets/moltean/fruits>
-[^2]: <https://github.com/Cata400/fruit_classification>
