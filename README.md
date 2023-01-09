@@ -179,7 +179,7 @@ Chapter [3 ](#_page26_x57.83_y57.83)presents the results obtained and the perfor
 
 2. Personal contributions
 - Analyzing the dataset, in order to gain an understanding of the data for for a suitable approach to the problem;
-- Applying dieren t types of PCA transforms to the data, with the goal of studying the eects of using fewer and fewer components to train the network;
+- Applying different types of PCA transforms to the data, with the goal of studying the eects of using fewer and fewer components to train the network;
 - Implementing and training of the MLP models.
 
 The source code of the project implementation is available on Github[^2].
